@@ -9,13 +9,13 @@ GitHub Pages 배포용 정적 사이트입니다. 9월 29문항과 10월 30문�
 3. **main** 브랜치와 **/(root)**를 선택하고 Save를 누릅니다.
 4. 배포가 완료되면 https://lawhlee.github.io/site/ 로 접속합니다.
 
-이 저장소에는 실행용 파일과 연결된 PDF를 모두 포함하며, `index.html`은 저장소 최상위에 있습니다.
+`index.html`은 저장소 최상위에 있습니다. 현재 홈페이지 실행 파일과 9월·10월 문제 및 답안 PDF가 업로드되어 있습니다. 강의안 PDF 11개는 아직 포함되지 않아 강의안 원문 링크는 열리지 않습니다. 화면 안의 해설 인용과 문제 풀이 기능은 사용할 수 있습니다.
 
 일반 저장소의 사이트 주소는 `https://계정명.github.io/저장소명/`입니다. `계정명.github.io`라는 사용자 사이트 저장소를 사용하면 주소는 `https://계정명.github.io/`입니다. 별도 서버, API 키, 빌드 명령은 필요하지 않습니다. `.nojekyll`도 함께 업로드합니다.
 
 ## 공개 범위
 
-일반적인 GitHub Pages 사이트는 인터넷에 공개됩니다. 저장소를 비공개로 설정해도 사이트까지 비공개가 되는 것은 아닙니다. 이 패키지에는 강의안, 문제 및 답안 PDF와 해설이 포함되어 있습니다. 기존 ChatGPT Sites의 소유자 전용 접근 제한은 이 배포에 적용되지 않습니다.
+일반적인 GitHub Pages 사이트는 인터넷에 공개됩니다. 저장소를 비공개로 설정해도 사이트까지 비공개가 되는 것은 아닙니다. 이 저장소에는 문제 및 답안 PDF와 해설이 포함되어 있습니다. 강의안 PDF 11개는 아직 업로드되지 않았습니다. 기존 ChatGPT Sites의 소유자 전용 접근 제한은 이 배포에 적용되지 않습니다.
 
 ## 기존 학습 기록 옮기기
 
@@ -30,3 +30,4 @@ GitHub Pages 배포용 정적 사이트입니다. 9월 29문항과 10월 30문�
 - CSS·JS·PDF는 상대 경로이므로 저장소 이름이 바뀌어도 경로를 수정할 필요가 없습니다.
 - 기존 사이트: https://civil3-september-drill.hslee0251.chatgpt.site
 - GitHub 공식 안내: https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site
+
