@@ -78,13 +78,24 @@ export function caseVariant(q,doShuffle=true,rng=Math.random){
   if(!doShuffle)options=options.sort((a,b)=>Number(a.id)-Number(b.id));
   return variantItem(q,states,positive,options);
 }
+const availableOX=(q,s,changed)=>!!s&&!s.excludeOX&&(!changed||(!q.excludeVariant&&!s.excludeVariant&&!!s.variant));
+const availableCase=q=>q.kind==='case'&&!q.excludeVariant&&q.statements.every(s=>!s.excludeVariant&&!!s.variant);
+export function isAvailableItem(item,bank){
+  if(!item)return false;
+  const q=bank.find(q=>q.n===item.q);if(!q)return false;
+  if(item.id===`original-${q.n}`)return true;
+  const oxMatch=item.id.match(/^ox-(\d+)-(.+)-(o|v)$/);
+  if(oxMatch&&Number(oxMatch[1])===q.n)return availableOX(q,q.statements.find(s=>s.key===oxMatch[2]),oxMatch[3]==='v');
+  const caseMatch=item.id.match(/^variant-(\d+)-([01]+)-(T|F)$/);
+  return !!caseMatch&&Number(caseMatch[1])===q.n&&caseMatch[2].length===q.statements.length&&caseMatch[2].includes('1')&&availableCase(q);
+}
 export function pool(bank,{source='mix',type='all',topic='all',set='all',shuffleOptions=true}={},rng=Math.random){
   const qs=bank.filter(q=>(topic==='all'||q.topic===topic)&&(set==='all'||(q.set||SETS[0].id)===set));let out=[];
   for(const q of qs){
     if(source==='original'){out.push(original(q,shuffleOptions,rng));continue;}
     if(q.kind==='concept'){
-      for(const s of q.statements){if(s.excludeOX)continue;if(source!=='variant')out.push(ox(q,s));if(source!=='claims'&&!s.excludeVariant)out.push(ox(q,s,true));}
-    } else {if(source!=='variant')out.push(original(q,shuffleOptions,rng));if(source!=='claims'&&!q.excludeVariant)out.push(caseVariant(q,shuffleOptions,rng));}
+      for(const s of q.statements){if(source!=='variant'&&availableOX(q,s,false))out.push(ox(q,s));if(source!=='claims'&&availableOX(q,s,true))out.push(ox(q,s,true));}
+    } else {if(source!=='variant')out.push(original(q,shuffleOptions,rng));if(source!=='claims'&&availableCase(q))out.push(caseVariant(q,shuffleOptions,rng));}
   }
   return out.filter(x=>type==='all'||x.type===type);
 }
@@ -104,7 +115,8 @@ function assessmentSignature(item){return JSON.stringify({
   options:item.options.map(o=>[o.id,assessmentText(o.text)]),correct:item.correct,accepted:[...(item.acceptedCorrectIds||[item.correct])].sort()
 });}
 function refreshItem(item,bank){
-  const q=bank.find(q=>q.n===item.q);if(!q)return {item,changed:false};
+  if(!isAvailableItem(item,bank))return {item,changed:false,available:false};
+  const q=bank.find(q=>q.n===item.q);
   let next;
   if(item.id===`original-${q.n}`){
     next=original(q);
@@ -136,24 +148,42 @@ function refreshItem(item,bank){
   const changed=assessmentSignature(item)!==assessmentSignature(next);
   if(changed)next.revisionNote='지문 검토 후 내용이 수정되었습니다. 수정 전 학습 기록은 보존하며, 현재 지문으로 다시 확인해 주세요.';
   else if(item.revisionNote)next.revisionNote=item.revisionNote;
-  return {item:next,changed};
+  return {item:next,changed,available:true};
 }
 export function refreshState(state,bank){
   // Version 1 backups store item snapshots. Refresh the source content without
   // discarding learning history or reshuffling the options the learner saw.
+  const removed=new Set();
   for(const record of Object.values(state.records)){
-    const refreshed=refreshItem(record.item,bank);record.item=refreshed.item;
+    const refreshed=refreshItem(record.item,bank);
+    if(!refreshed.available){
+      if(!record.unavailable)removed.add(record.item.id);
+      record.unavailable=true;continue;
+    }
+    delete record.unavailable;record.item=refreshed.item;
     if(refreshed.changed)record.needsReview=true;
   }
-  for(const [id,item] of Object.entries(state.bookmarks))state.bookmarks[id]=refreshItem(item,bank).item;
-  if(state.session){
-    state.session.deck=state.session.deck.map((item,i)=>{
-      const refreshed=refreshItem(item,bank);
-      // A response to a different proposition must not grade the revised one.
-      if(refreshed.changed)delete state.session.responses[i];
-      return refreshed.item;
-    });
+  for(const [id,item] of Object.entries(state.bookmarks)){
+    const refreshed=refreshItem(item,bank);
+    if(!refreshed.available){delete state.bookmarks[id];removed.add(id);}
+    else state.bookmarks[id]=refreshed.item;
   }
+  if(state.session){
+    const session=state.session,kept=[],responses={};
+    session.deck.forEach((item,i)=>{
+      const refreshed=refreshItem(item,bank);
+      if(!refreshed.available){removed.add(item.id);return;}
+      // A response to a different proposition must not grade the revised one.
+      if(!refreshed.changed&&session.responses[i])responses[kept.length]=session.responses[i];
+      kept.push({item:refreshed.item,index:i});
+    });
+    if(kept.length){
+      const next=kept.findIndex(entry=>entry.index>=session.index);
+      session.index=next<0?kept.length-1:next;
+      session.deck=kept.map(entry=>entry.item);session.responses=responses;
+    }else state.session=null;
+  }
+  if(removed.size)state.unavailableNotice=true;
   return state;
 }
 export function isCorrectAnswer(item,answer){return Array.isArray(item.acceptedCorrectIds)?item.acceptedCorrectIds.includes(answer):answer===item.correct;}
@@ -161,7 +191,7 @@ export function grade(state,item,answer){
   const right=isCorrectAnswer(item,answer),old=state.records[item.id]||{attempts:0,correct:0,wrong:0};
   state.records[item.id]={...old,attempts:old.attempts+1,correct:old.correct+(right?1:0),wrong:old.wrong+(right?0:1),lastCorrect:right,needsReview:false,at:Date.now(),item};return right;
 }
-export function statistics(state){const r=Object.values(state.records);const attempts=r.reduce((a,b)=>a+b.attempts,0),correct=r.reduce((a,b)=>a+b.correct,0);return {attempts,correct,accuracy:attempts?Math.round(correct/attempts*100):0,wrong:r.filter(x=>!x.lastCorrect||x.needsReview),covered:new Set(r.map(x=>x.item.q)).size,bookmarks:Object.values(state.bookmarks).length};}
+export function statistics(state){const r=Object.values(state.records);const attempts=r.reduce((a,b)=>a+b.attempts,0),correct=r.reduce((a,b)=>a+b.correct,0);return {attempts,correct,accuracy:attempts?Math.round(correct/attempts*100):0,wrong:r.filter(x=>!x.unavailable&&(!x.lastCorrect||x.needsReview)),covered:new Set(r.map(x=>x.item.q)).size,bookmarks:Object.values(state.bookmarks).length};}
 export function studySummary(bank,state,set='all'){
   const selected=bank.filter(q=>set==='all'||(q.set||SETS[0].id)===set);
   const questions=new Map(selected.map(q=>[q.n,q]));
@@ -175,7 +205,7 @@ export function studySummary(bank,state,set='all'){
     const q=questions.get(r.item.q);if(!q||!(r.attempts>0))continue;
     const topic=groups.get(q.topic);
     if(!seen.has(q.n)){seen.add(q.n);topic.covered++;}
-    if(!r.lastCorrect||r.needsReview){reviewItems++;topic.reviewItems++;}
+    if(!r.unavailable&&(!r.lastCorrect||r.needsReview)){reviewItems++;topic.reviewItems++;}
   }
   const total=selected.length,covered=seen.size;
   const topics=[...groups.values()].map(topic=>({...topic,percent:Math.round(topic.covered/topic.total*100)}));
