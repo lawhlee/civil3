@@ -2,8 +2,8 @@ export const VERSION = 1;
 export const LETTERS = ['ㄱ','ㄴ','ㄷ','ㄹ','ㅁ','ㅂ'];
 export const NUMBERS = ['①','②','③','④','⑤'];
 export const SETS = [
-  {id:'2026-09',label:'9월',count:29,questions:'./sources/questions.pdf',answers:'./sources/answers.pdf'},
-  {id:'2026-10',label:'10월',count:30,questions:'./sources/questions-october.pdf',answers:'./sources/answers-october.pdf'}
+  {id:'2026-09',label:'9월',count:29},
+  {id:'2026-10',label:'10월',count:30}
 ];
 export function questionLabel(item){return `${(SETS.find(s=>s.id===(item.set||SETS[0].id))||SETS[0]).label} ${item.number||item.q||item.n}번`;}
 export const chapters = [
@@ -13,10 +13,6 @@ export const chapters = [
  ['06',234,292,'제6강 · 공동소유·명의신탁'],['07',293,313,'제7강 · 담보·저당권'],
  ['08',314,381,'제8강 · 저당권'],['09',382,408,'제9강 · 유치권·질권'],['10',409,441,'제10강 · 비전형 담보']
 ];
-export function lectureLink(book) {
-  const c = chapters.find(x=>book>=x[1]&&book<=x[2]);
-  return c ? `./sources/lecture-${c[0]}.pdf#page=${book-c[1]+1}` : './sources/lecture-01.pdf';
-}
 export function shuffle(xs, rng=Math.random) {
   const a=[...xs]; for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a;
 }
@@ -24,9 +20,9 @@ export function seeded(seed) {let a=seed>>>0;return ()=>{a|=0;a=a+0x6D2B79F5|0;l
 const combo=q=>q.statements.some(s=>LETTERS.includes(s.key));
 const cleanChoice=t=>t.replace(/^[①②③④⑤]\s*/, '');
 function base(q){
-  const set=q.set||SETS[0].id,source=SETS.find(s=>s.id===set)||SETS[0];
+  const set=q.set||SETS[0].id;
   const reviewedAnswer=q.reviewedAnswer??q.answer;
-  return {q:q.n,set,number:q.number||q.n,questionSource:q.questionSource||source.questions,answerSource:q.answerSource||source.answers,title:q.title,topic:q.topic,pdfPage:q.pdfPage,note:q.note||'',sourceNote:q.sourceNote||'',answerReviewRequired:reviewedAnswer!==q.answer,answerReviewNote:q.answerReviewNote||''};
+  return {q:q.n,set,number:q.number||q.n,title:q.title,topic:q.topic,pdfPage:q.pdfPage,note:q.note||'',sourceNote:q.sourceNote||'',answerReviewRequired:reviewedAnswer!==q.answer,answerReviewNote:q.answerReviewNote||''};
 }
 function detail(s){return {key:s.key,text:s.text,truth:s.truth,explanation:s.explanation,correction:s.correction||'',refs:s.refs||[],externalRefs:s.externalRefs||[],quotations:s.quotations||[],note:s.note||'',...(s.changed?{changed:true,originalText:s.originalText}:{}),...(s.verdictLabel?{verdictLabel:s.verdictLabel}:{}),...(s.verdictReview?{verdictReview:true}:{}),...(s.originalKey?{originalKey:s.originalKey}:{})};}
 const reordered=options=>options.some((o,i)=>o.id!==[...options].sort((a,b)=>Number(a.id)-Number(b.id))[i].id);
