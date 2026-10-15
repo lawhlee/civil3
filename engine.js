@@ -162,6 +162,25 @@ export function grade(state,item,answer){
   state.records[item.id]={...old,attempts:old.attempts+1,correct:old.correct+(right?1:0),wrong:old.wrong+(right?0:1),lastCorrect:right,needsReview:false,at:Date.now(),item};return right;
 }
 export function statistics(state){const r=Object.values(state.records);const attempts=r.reduce((a,b)=>a+b.attempts,0),correct=r.reduce((a,b)=>a+b.correct,0);return {attempts,correct,accuracy:attempts?Math.round(correct/attempts*100):0,wrong:r.filter(x=>!x.lastCorrect||x.needsReview),covered:new Set(r.map(x=>x.item.q)).size,bookmarks:Object.values(state.bookmarks).length};}
+export function studySummary(bank,state,set='all'){
+  const selected=bank.filter(q=>set==='all'||(q.set||SETS[0].id)===set);
+  const questions=new Map(selected.map(q=>[q.n,q]));
+  const groups=new Map();
+  for(const q of selected){
+    if(!groups.has(q.topic))groups.set(q.topic,{name:q.topic,total:0,covered:0,percent:0,reviewItems:0});
+    groups.get(q.topic).total++;
+  }
+  const seen=new Set();let reviewItems=0;
+  for(const r of Object.values(state.records)){
+    const q=questions.get(r.item.q);if(!q||!(r.attempts>0))continue;
+    const topic=groups.get(q.topic);
+    if(!seen.has(q.n)){seen.add(q.n);topic.covered++;}
+    if(!r.lastCorrect||r.needsReview){reviewItems++;topic.reviewItems++;}
+  }
+  const total=selected.length,covered=seen.size;
+  const topics=[...groups.values()].map(topic=>({...topic,percent:Math.round(topic.covered/topic.total*100)}));
+  return {total,covered,unseen:total-covered,percent:total?Math.round(covered/total*100):0,reviewItems,topics};
+}
 function validAcceptedAnswers(x){return x.acceptedCorrectIds===undefined||(x.type==='mcq'&&x.origin==='original'&&Array.isArray(x.acceptedCorrectIds)&&x.acceptedCorrectIds.length>0&&new Set(x.acceptedCorrectIds).size===x.acceptedCorrectIds.length&&x.acceptedCorrectIds.includes(x.correct)&&x.acceptedCorrectIds.every(id=>typeof id==='string'&&x.options.some(o=>o.id===id)));}
 export function validItem(x){return !!x&&typeof x.id==='string'&&Number.isInteger(x.q)&&x.q>=1&&x.q<=SETS.reduce((total,s)=>total+s.count,0)&&['ox','mcq'].includes(x.type)&&typeof x.stem==='string'&&Array.isArray(x.options)&&x.options.length>=2&&x.options.length<=5&&x.options.every(o=>typeof o.id==='string'&&typeof o.text==='string')&&x.options.some(o=>o.id===x.correct)&&validAcceptedAnswers(x)&&Array.isArray(x.statements)&&Array.isArray(x.details)&&x.details.every(s=>typeof s.text==='string'&&typeof s.truth==='boolean'&&typeof s.explanation==='string'&&Array.isArray(s.refs));}
 export function validateState(s){
