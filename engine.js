@@ -59,7 +59,7 @@ function variantItem(q,states,positive,options){
   const pattern=states.map(s=>s.changed?'1':'0').join('');
   const context=variantStem(q);
   const mask=states.reduce((m,s,i)=>s.truth===positive?m|(1<<i):m,0);
-  return {...base(q),id:`variant-${q.n}-${pattern}-${positive?'T':'F'}`,type:'mcq',origin:'variant',label:'사례 변형',
+  return {...base(q),id:`variant-${q.n}-${pattern}-${positive?'T':'F'}`,type:'mcq',origin:'variant',label:'사례변형(실험)',
     stem:`${context?context+'\n\n':''}다음 지문 중 ${positive?'옳은':'옳지 않은'} 것을 모두 고르세요. (각 지문은 독립적이며, 다툼이 있는 경우 판례에 의함)`,
     statements:states.map((s,i)=>({key:LETTERS[i],text:s.text})),details:states.map((s,i)=>detail({...s,key:LETTERS[i],verdictLabel:''})),options,optionsReconstructed:true,optionsReordered:reordered(options),correct:String(mask),positive};
 }
@@ -80,6 +80,7 @@ export function caseVariant(q,doShuffle=true,rng=Math.random){
 }
 const availableOX=(q,s,changed)=>!!s&&!s.excludeOX&&(!changed||(!q.excludeVariant&&!s.excludeVariant&&!!s.variant));
 const availableCase=q=>q.kind==='case'&&!q.excludeVariant&&q.statements.every(s=>!s.excludeVariant&&!!s.variant);
+export const isCaseVariant=item=>/^variant-\d+-[01]+-[TF]$/.test(item?.id||'');
 export function isAvailableItem(item,bank){
   if(!item)return false;
   const q=bank.find(q=>q.n===item.q);if(!q)return false;
@@ -93,9 +94,10 @@ export function pool(bank,{source='mix',type='all',topic='all',set='all',shuffle
   const qs=bank.filter(q=>(topic==='all'||q.topic===topic)&&(set==='all'||(q.set||SETS[0].id)===set));let out=[];
   for(const q of qs){
     if(source==='original'){out.push(original(q,shuffleOptions,rng));continue;}
+    if(source==='case-experiment'){if(availableCase(q))out.push(caseVariant(q,shuffleOptions,rng));continue;}
     if(q.kind==='concept'){
       for(const s of q.statements){if(source!=='variant'&&availableOX(q,s,false))out.push(ox(q,s));if(source!=='claims'&&availableOX(q,s,true))out.push(ox(q,s,true));}
-    } else {if(source!=='variant')out.push(original(q,shuffleOptions,rng));if(source!=='claims'&&availableCase(q))out.push(caseVariant(q,shuffleOptions,rng));}
+    } else if(source!=='variant')out.push(original(q,shuffleOptions,rng));
   }
   return out.filter(x=>type==='all'||x.type===type);
 }
@@ -173,6 +175,7 @@ export function refreshState(state,bank){
     session.deck.forEach((item,i)=>{
       const refreshed=refreshItem(item,bank);
       if(!refreshed.available){removed.add(item.id);return;}
+      if(isCaseVariant(item)&&!session.finished&&session.source!=='case-experiment'){state.caseExperimentNotice=true;return;}
       // A response to a different proposition must not grade the revised one.
       if(!refreshed.changed&&session.responses[i])responses[kept.length]=session.responses[i];
       kept.push({item:refreshed.item,index:i});
