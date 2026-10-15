@@ -1,0 +1,29 @@
+name: Civil3 asset transfer
+on:
+  push:
+    branches: [civil3-asset-transfer-20261015]
+    paths:
+      - .github/workflows/civil3-transfer.yml
+      - .asset-transfer/ready.json
+permissions:
+  contents: write
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check staged files
+        id: ready
+        shell: bash
+        run: |
+          if [ -f .asset-transfer/ready.json ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "Transfer workflow is ready; waiting for all asset chunks."
+          fi
+      - name: Restore exact PDF files
+        if: steps.ready.outputs.ready == 'true'
+        run: python .asset-transfer/restore.py
