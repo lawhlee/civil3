@@ -163,6 +163,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .study-overview .eyebrow{font-size:10px;color:var(--study-blue);letter-spacing:1.6px}
 .study-overview h2{font-family:'Noto Serif KR',serif;font-size:23px;margin:7px 0 3px}
 .study-scope{font-size:12px;color:#5c6f77}
+label.study-range{margin-top:15px;font-size:12px}.study-range select{min-width:0;max-width:100%;min-height:48px;font-size:16px}
 .study-coverage{display:grid;grid-template-columns:100px minmax(0,1fr);align-items:center;gap:14px;margin:23px 0}
 .study-coverage>div{min-width:0}
 .coverage-ring{width:100px;aspect-ratio:1;display:grid;place-items:center;border-radius:50%;background:conic-gradient(var(--study-blue) var(--coverage),#dfe8eb 0);position:relative}
