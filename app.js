@@ -135,7 +135,7 @@ else if(a==='show-results')move('results');
 else if(a==='open-item'){const found=findItem(b.dataset.id);if(!found){toast('현재 제공하지 않는 문항입니다.');return;}const f=()=>begin([found],'practice');if(x&&!x.finished)confirmAction('이 문제를 연습할까요?','진행 중인 회차가 이 문제 연습으로 교체됩니다. 채점 기록과 북마크는 유지됩니다.','문제 풀기',f);else f();}
 else if(a==='remove-item'){const id=b.dataset.id;if(tab==='bookmarks'){delete state.bookmarks[id];save();render();}else confirmAction('오답 복습을 완료로 표시할까요?','오답 목록에서만 빠지며 누적 정답률과 풀이 횟수는 그대로 유지됩니다.','완료 표시',()=>{state.records[id].lastCorrect=true;state.records[id].needsReview=false;state.records[id].archived=true;save();render();});}
 else if(a==='practice-list'){const items=currentList();const f=()=>begin(shuffle(items),'practice');if(x&&!x.finished)confirmAction('복습 회차를 시작할까요?','진행 중인 회차가 선택 목록의 복습으로 교체됩니다.','복습 시작',f);else f();}
-else if(a==='retry-wrong'){begin(x.deck.filter((_,i)=>!x.responses[i]?.correct),'practice');}
+else if(a==='retry-wrong'){begin(x.deck.filter((item,i)=>!x.responses[i]?.correct&&(x.source==='case-experiment'||!isCaseVariant(item))),'practice');}
 else if(a==='dismiss-case-experiment'){delete state.caseExperimentNotice;save();render();}
 else if(a==='dismiss-unavailable'){delete state.unavailableNotice;save();render();}
 else if(a==='export')exportState();
