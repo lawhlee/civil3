@@ -25,7 +25,7 @@ function announce(msg){document.querySelector("#live").textContent=msg;}
 function goto(page){if(location.hash==="#"+page)render();else location.hash=page;}
 function page(){return (location.hash||"#home").slice(1);}
 function action(id,label,cls="secondary",extra=""){return '<button type="button" class="'+cls+'" data-do="'+esc(id)+'" '+extra+'>'+label+'</button>';}
-function sourceLinks(keys,repo){const out=[...new Set(keys||[])].filter(k=>data.caseLinks[k]).map(k=>'<a target="_blank" rel="noopener" href="'+esc(data.caseLinks[k])+'">'+(k.startsWith('민법 ')?'':'대법원 ')+esc(k)+'</a>');if(repo)out.push('<a target="_blank" rel="noopener" href="'+esc(repo)+'">관련 기출문제 보기</a>');return out.length?'<div class="sources">'+out.join("")+'</div>':"";}
+function sourceLinks(keys){const out=[...new Set(keys||[])].filter(k=>data.caseLinks[k]).map(k=>'<a target="_blank" rel="noopener" href="'+esc(data.caseLinks[k])+'">'+(k.startsWith('민법 ')?'':'대법원 ')+esc(k)+'</a>');return out.length?'<div class="sources">'+out.join("")+'</div>':"";}
 function safeNow(){return new Date().toISOString();}
 function configKey(k,v,t){return '<button type="button" data-do="cfg" data-k="'+k+'" data-v="'+v+'" class="'+(cfg[k]===v?"on":"")+'" aria-pressed="'+(cfg[k]===v)+'">'+t+'</button>';}
 function select(k,opts){return '<select data-setting="'+k+'">'+opts.map(([v,t])=>'<option value="'+v+'" '+(cfg[k]===v?'selected':'')+'>'+t+'</option>').join("")+'</select>';}
@@ -72,11 +72,11 @@ function optionList(item,sel,graded){
 function feedback(it,a,live=true){
  const isox=it.kind==="ox"||it.kind==="vx",q=it.q,flag=a.correct?'정답입니다':'오답입니다';
  let body;
- if(isox)body='<p class="expbody">'+esc(it.s.reason)+'</p>'+sourceLinks(it.s.cases,null);
+ if(isox)body='<p class="expbody">'+esc(it.s.reason)+'</p>'+sourceLinks(it.s.cases);
  else {
   const v=it.kind==="vm";
   const rows=v?q.variants.map((x,i)=>({label:C.codes[i],mark:x.truth?"O":"X",reason:x.reason})):q.explain;
-  body=rows.map(x=>'<p class="expitem"><b>'+esc(x.label+' '+x.mark)+'</b>　'+esc(x.reason)+'</p>').join("")+sourceLinks(v?q.variants.flatMap(x=>x.cases||[]):q.cases,v?null:q.source);
+  body=rows.map(x=>'<p class="expitem"><b>'+esc(x.label+' '+x.mark)+'</b>　'+esc(x.reason)+'</p>').join("")+sourceLinks(v?q.variants.flatMap(x=>x.cases||[]):q.cases);
  }
  return '<section '+(live?'id="feedback" tabindex="-1"':'')+' class="feedback"><span class="tag '+(a.correct?'green':'red')+'">'+flag+'</span><h2>'+(!a.correct?'내 답 '+formatAnswer(it,a.choice)+'　·　':'')+'정답 '+formatAnswer(it,it.answer)+'</h2>'+body+'</section>';
 }
