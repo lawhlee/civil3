@@ -25,7 +25,7 @@ function announce(msg){document.querySelector("#live").textContent=msg;}
 function goto(page){if(location.hash==="#"+page)render();else location.hash=page;}
 function page(){return (location.hash||"#home").slice(1);}
 function action(id,label,cls="secondary",extra=""){return '<button type="button" class="'+cls+'" data-do="'+esc(id)+'" '+extra+'>'+label+'</button>';}
-function sourceLinks(keys,repo){const out=[...new Set(keys||[])].filter(k=>data.caseLinks[k]).map(k=>'<a target="_blank" rel="noopener" href="'+esc(data.caseLinks[k])+'">'+(k.startsWith('민법 ')?'':'대법원 ')+esc(k)+'</a>');if(repo)out.push('<a target="_blank" rel="noopener" href="'+esc(repo)+'">barexam 대응 문항</a>');return out.length?'<div class="sources">'+out.join("")+'</div>':"";}
+function sourceLinks(keys,repo){const out=[...new Set(keys||[])].filter(k=>data.caseLinks[k]).map(k=>'<a target="_blank" rel="noopener" href="'+esc(data.caseLinks[k])+'">'+(k.startsWith('민법 ')?'':'대법원 ')+esc(k)+'</a>');if(repo)out.push('<a target="_blank" rel="noopener" href="'+esc(repo)+'">관련 기출문제 보기</a>');return out.length?'<div class="sources">'+out.join("")+'</div>':"";}
 function safeNow(){return new Date().toISOString();}
 function configKey(k,v,t){return '<button type="button" data-do="cfg" data-k="'+k+'" data-v="'+v+'" class="'+(cfg[k]===v?"on":"")+'" aria-pressed="'+(cfg[k]===v)+'">'+t+'</button>';}
 function select(k,opts){return '<select data-setting="'+k+'">'+opts.map(([v,t])=>'<option value="'+v+'" '+(cfg[k]===v?'selected':'')+'>'+t+'</option>').join("")+'</select>';}
